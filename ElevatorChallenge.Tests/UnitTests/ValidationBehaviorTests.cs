@@ -49,7 +49,7 @@ public class ValidationBehaviorTests
 
         //------------------------------- Assert ------------------------------
         await action.Should().ThrowExactlyAsync<ValidationException>()
-                .Where(ex => ex.Errors.Any(e => e.PropertyName == "Count" && e.ErrorMessage.Contains("must be greater than 1"))); ;
+                .Where(ex => ex.Errors.Any(e => e.PropertyName == "Count" && e.ErrorMessage.Contains("must be greater than 0"))); ;
     }
 
     [Test]

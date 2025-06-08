@@ -26,9 +26,9 @@ public class StandardElevatorTests
         elevator.Status.Should().BeEquivalentTo(expectedStatus);
     }
 
-    [TestCase(1, 3)]
-    [TestCase(2, 3)]
-    public void CanAcceptPassenger_Given_Requesting_Passenger_Plus_Those_Inside_The_Elevator_Donot_Exceed_Max_Capacity_Should_Return_True(int requestingPassengers, int currentPassengers)
+    [TestCase(3)]
+    [TestCase(4)]
+    public void HasCapacity_Given_Elevator_Has_Space_Should_Return_True(int currentPassengers)
     {
         //-------------------------------- Arrange --------------------------------
         var elevatorId = 1;
@@ -38,7 +38,7 @@ public class StandardElevatorTests
         elevator.Status.PassengerCount = currentPassengers;
 
         //-------------------------------- Act ------------------------------------
-        var actual = elevator.CanAcceptPassenger(requestingPassengers);
+        var actual = elevator.HasCapacity();
 
         //-------------------------------- Assert ---------------------------------
         actual.Should().BeTrue();
@@ -46,9 +46,9 @@ public class StandardElevatorTests
         elevator.PendingRequests.Should().HaveCount(0);
     }
 
-    [TestCase(3, 3)]
-    [TestCase(5, 1)]
-    public void CanAcceptPassenger_Given_Requesting_Passenger_Plus_Those_Inside_The_Elevator_Exceeds_Max_Capacity_Should_Return_False(int requestingPassengers, int currentPassengers)
+    [TestCase(5)]
+    [TestCase(6)]
+    public void HasCapacity_Given_Elevator_Has_No_Space_Should_Return_False(int currentPassengers)
     {
         //-------------------------------- Arrange --------------------------------
         var elevatorId = 1;
@@ -58,7 +58,7 @@ public class StandardElevatorTests
         elevator.Status.PassengerCount = currentPassengers;
 
         //-------------------------------- Act ------------------------------------
-        var actual = elevator.CanAcceptPassenger(requestingPassengers);
+        var actual = elevator.HasCapacity();
 
         //-------------------------------- Assert ---------------------------------
         actual.Should().BeFalse();
@@ -184,7 +184,7 @@ public class StandardElevatorTests
 
     private static IConfiguration CreateConfiguration(int maxCapacity)
     {
-        var inMemorySettings = new Dictionary<string, string> { { "ElevatorDefaultMaxCapacity", maxCapacity.ToString() } };
+        var inMemorySettings = new Dictionary<string, string> { { "ElevatorOptions:ElevatorDefaultMaxCapacity", maxCapacity.ToString() } };
 
         return new ConfigurationBuilder().AddInMemoryCollection(inMemorySettings!).Build();
     }

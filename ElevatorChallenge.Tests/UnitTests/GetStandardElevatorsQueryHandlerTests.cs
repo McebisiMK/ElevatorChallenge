@@ -13,7 +13,7 @@ public class GetStandardElevatorsQueryHandlerTests
     public void Validate_Given_Count_Equal_To_Zero_Should_Fail_And_Return_Correct_Validation_Error()
     {
         //------------------------------ Arrange ------------------------------
-        var expectedErrors = new List<string> { "Number of requested elevator creation must be greater than 1." };
+        var expectedErrors = new List<string> { "Number of requested elevator creation must be greater than 0." };
         var query = new GetStandardElevatorsQuery { Count = 0 };
         var validator = new GetStandardElevatorsQueryValidator();
 

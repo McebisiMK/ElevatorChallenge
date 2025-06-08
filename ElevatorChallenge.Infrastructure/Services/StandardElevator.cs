@@ -23,17 +23,14 @@ public class StandardElevator : IElevator
             CurrentFloor = startFloor,
             Direction = Direction.Idle,
         };
-        MaxCapacity = configuration.GetValue<int>("ElevatorDefaultMaxCapacity");
+        MaxCapacity = configuration.GetValue<int>("ElevatorOptions:ElevatorDefaultMaxCapacity");
     }
+
+    public bool HasCapacity() => Status.PassengerCount < MaxCapacity;
 
     public void AddRequest(int floor)
     {
         if (!requests.Contains(floor)) requests.Enqueue(floor);
-    }
-
-    public bool CanAcceptPassenger(int count)
-    {
-        return Status.PassengerCount + count <= MaxCapacity;
     }
 
     public void Move()
