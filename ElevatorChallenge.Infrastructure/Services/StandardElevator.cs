@@ -11,6 +11,7 @@ public class StandardElevator : IElevator
 
     public int MaxCapacity { get; }
     public ElevatorStatus Status { get; private set; }
+    public IReadOnlyCollection<int> PendingRequests => [.. requests];
 
     public StandardElevator(IConfiguration configuration, int id, int startFloor = 0)
     {
@@ -37,7 +38,7 @@ public class StandardElevator : IElevator
 
     public void Move()
     {
-        if (requests.Count == 0)
+        if (NoOutstandingRequests())
         {
             UpdateMovement(Direction.Idle, false);
             return;
@@ -49,11 +50,20 @@ public class StandardElevator : IElevator
         UpdateMovement(direction, true);
         UpdatePosition(nextFloor);
 
-        if (IsCurrentLevelRequest(nextFloor))
+        if (IsCurrentLevelRequest(nextFloor)) UpdateStatusOnArrival();
+    }
+
+    private void UpdateStatusOnArrival()
+    {
+        requests.Dequeue();
+
+        if (NoOutstandingRequests())
         {
-            requests.Dequeue();
-            Status.IsMoving = false;
+            UpdateMovement(Direction.Idle, false);
+            return;
         }
+
+        Status.IsMoving = false;
     }
 
     private void UpdateMovement(Direction direction, bool isMoving)
@@ -73,6 +83,8 @@ public class StandardElevator : IElevator
     {
         return IsUpperLevelRequest(nextFloor) ? Direction.Up : Direction.Down;
     }
+
+    private bool NoOutstandingRequests() => requests.Count == 0;
 
     private bool IsCurrentLevelRequest(int nextFloor) => Status.CurrentFloor == nextFloor;
 
