@@ -8,7 +8,7 @@ namespace ElevatorChallenge.Application.Queries.Elevators.GetElevators
         {
             RuleFor(request => request.Count)
              .GreaterThan(0)
-             .WithMessage("Number of elevators must be at least 1.");
+             .WithMessage("Number of requested elevator creation must be greater than 1.");
         }
     }
 }
