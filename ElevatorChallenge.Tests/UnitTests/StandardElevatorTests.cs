@@ -78,6 +78,7 @@ public class StandardElevatorTests
 
         //-------------------------------- Assert ---------------------------------
         elevator.Status.IsMoving.Should().BeFalse();
+        elevator.Status.PassengerCount.Should().Be(0);
         elevator.PendingRequests.Should().HaveCount(0);
         elevator.Status.Direction.Should().Be(Direction.Idle);
     }
@@ -89,7 +90,7 @@ public class StandardElevatorTests
         var elevatorId = 1;
         var elevator = CreateStandardElevator(elevatorId, startFloor: 0);
 
-        elevator.AddRequest(floor: 2);
+        elevator.AddRequest(floor: 2, waitingPassengers: 2);
 
         //-------------------------------- Act ------------------------------------
         elevator.Move(); // should go to floor 1
@@ -97,6 +98,7 @@ public class StandardElevatorTests
         //-------------------------------- Assert ---------------------------------
         elevator.Status.IsMoving.Should().BeTrue();
         elevator.Status.CurrentFloor.Should().Be(1);
+        elevator.Status.PassengerCount.Should().Be(0);
         elevator.PendingRequests.Should().HaveCount(1);
         elevator.Status.Direction.Should().Be(Direction.Up);
 
@@ -105,6 +107,7 @@ public class StandardElevatorTests
         //-------------------------------- Assert ---------------------------------
         elevator.Status.CurrentFloor.Should().Be(2);
         elevator.Status.IsMoving.Should().BeFalse();
+        elevator.Status.PassengerCount.Should().Be(2);
         elevator.PendingRequests.Should().HaveCount(0);
         elevator.Status.Direction.Should().Be(Direction.Idle);
     }
@@ -116,7 +119,7 @@ public class StandardElevatorTests
         var elevatorId = 1;
         var elevator = CreateStandardElevator(elevatorId, startFloor: 3);
 
-        elevator.AddRequest(floor: 1);
+        elevator.AddRequest(floor: 1, waitingPassengers: 2);
 
         //-------------------------------- Act ------------------------------------
         elevator.Move(); // should go to floor 2
@@ -132,6 +135,7 @@ public class StandardElevatorTests
         //-------------------------------- Assert ---------------------------------
         elevator.Status.CurrentFloor.Should().Be(1);
         elevator.Status.IsMoving.Should().BeFalse();
+        elevator.Status.PassengerCount.Should().Be(2);
         elevator.PendingRequests.Should().HaveCount(0);
         elevator.Status.Direction.Should().Be(Direction.Idle);
     }
@@ -143,14 +147,15 @@ public class StandardElevatorTests
         var elevatorId = 1;
         var elevator = CreateStandardElevator(elevatorId, startFloor: 0);
 
-        elevator.AddRequest(floor: 1);
-        elevator.AddRequest(floor: 1); // duplicate
+        elevator.AddRequest(floor: 1, waitingPassengers: 2);
+        elevator.AddRequest(floor: 1, waitingPassengers: 2); // duplicate
 
         //-------------------------------- Act ------------------------------------
         elevator.Move(); // should go to floor 1
 
         //-------------------------------- Assert ---------------------------------
         elevator.Status.CurrentFloor.Should().Be(1);
+        elevator.Status.PassengerCount.Should().Be(2);
         elevator.Status.IsMoving.Should().BeFalse(); // Should stop and serve both requests in one
         elevator.Status.Direction.Should().Be(Direction.Idle); // Stop, both requests are served
         elevator.PendingRequests.Should().HaveCount(0); // No more requests
@@ -163,7 +168,7 @@ public class StandardElevatorTests
         var elevatorId = 1;
         var elevator = CreateStandardElevator(elevatorId, startFloor: 2);
 
-        elevator.AddRequest(floor: 2);
+        elevator.AddRequest(floor: 2, waitingPassengers: 2);
 
         //-------------------------------- Act ------------------------------------
         elevator.Move();
@@ -171,6 +176,7 @@ public class StandardElevatorTests
         //-------------------------------- Assert ---------------------------------
         elevator.Status.CurrentFloor.Should().Be(2);
         elevator.Status.IsMoving.Should().BeFalse();
+        elevator.Status.PassengerCount.Should().Be(2);
         elevator.PendingRequests.Should().HaveCount(0);
         elevator.Status.Direction.Should().Be(Direction.Idle);
     }

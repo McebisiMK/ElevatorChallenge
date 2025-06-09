@@ -7,11 +7,11 @@ namespace ElevatorChallenge.Infrastructure.Services;
 
 public class StandardElevator : IElevator
 {
-    private readonly Queue<int> requests = new();
+    private readonly Queue<(int Floor, int Passengers)> requests = new();
 
     public int MaxCapacity { get; }
     public ElevatorStatus Status { get; private set; }
-    public IReadOnlyCollection<int> PendingRequests => [.. requests];
+    public IReadOnlyCollection<int> PendingRequests => [.. requests.Select(x => x.Floor)];
 
     public StandardElevator(IConfiguration configuration, int id, int startFloor = 0)
     {
@@ -28,9 +28,9 @@ public class StandardElevator : IElevator
 
     public bool HasCapacity() => Status.PassengerCount < MaxCapacity;
 
-    public void AddRequest(int floor)
+    public void AddRequest(int floor, int waitingPassengers)
     {
-        if (!requests.Contains(floor)) requests.Enqueue(floor);
+        if (!requests.Any(r => r.Floor == floor)) requests.Enqueue((floor, waitingPassengers));
     }
 
     public void Move()
@@ -41,18 +41,23 @@ public class StandardElevator : IElevator
             return;
         }
 
-        var nextFloor = requests.Peek();
+        var (nextFloor, waitingPassengers) = requests.Peek();
         var direction = GetDirection(nextFloor);
 
         UpdateMovement(direction, true);
         UpdatePosition(nextFloor);
 
-        if (IsCurrentLevelRequest(nextFloor)) UpdateStatusOnArrival();
+        if (IsCurrentLevelRequest(nextFloor)) UpdateStatusOnArrival(waitingPassengers);
     }
 
-    private void UpdateStatusOnArrival()
+    private void UpdateStatusOnArrival(int waitingPassengers)
     {
         requests.Dequeue();
+
+        var availableSpace = MaxCapacity - Status.PassengerCount;
+        var passengersToLoad = Math.Min(waitingPassengers, availableSpace);
+
+        Status.PassengerCount += passengersToLoad;
 
         if (NoOutstandingRequests())
         {

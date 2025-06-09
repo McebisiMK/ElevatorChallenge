@@ -10,5 +10,5 @@ public interface IElevator
 
     void Move();
     bool HasCapacity();
-    void AddRequest(int floor);
+    void AddRequest(int floor, int waitingPassengers);
 }
