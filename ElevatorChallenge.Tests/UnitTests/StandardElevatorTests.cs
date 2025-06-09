@@ -13,15 +13,13 @@ public class StandardElevatorTests
     public void Constructor_Should_Set_Default_Status_And_MaxCapacity()
     {
         //------------------------- Arrange -------------------------
-        var elevatorId = 1;
-        var maxCapacity = 8;
-        var expectedStatus = new ElevatorStatus { Id = 1, Direction = Direction.Idle };
+        var expectedStatus = new ElevatorStatus { Id = 1, Direction = Direction.Idle, CurrentFloor = 0, PassengerCount = 0 };
 
         //------------------------- Act ----------------------------
-        var elevator = CreateStandardElevator(elevatorId, maxCapacity);
+        var elevator = CreateStandardElevator(id: 1, maxCapacity: 8);
 
         //------------------------- Assert --------------------------
-        elevator.MaxCapacity.Should().Be(maxCapacity);
+        elevator.MaxCapacity.Should().Be(8);
         elevator.PendingRequests.Should().HaveCount(0);
         elevator.Status.Should().BeEquivalentTo(expectedStatus);
     }
@@ -31,9 +29,7 @@ public class StandardElevatorTests
     public void HasCapacity_Given_Elevator_Has_Space_Should_Return_True(int currentPassengers)
     {
         //-------------------------------- Arrange --------------------------------
-        var elevatorId = 1;
-        var maxCapacity = 5;
-        var elevator = CreateStandardElevator(elevatorId, maxCapacity);
+        var elevator = CreateStandardElevator(id: 1, maxCapacity: 5);
 
         elevator.Status.PassengerCount = currentPassengers;
 
@@ -42,7 +38,7 @@ public class StandardElevatorTests
 
         //-------------------------------- Assert ---------------------------------
         actual.Should().BeTrue();
-        elevator.MaxCapacity.Should().Be(maxCapacity);
+        elevator.MaxCapacity.Should().Be(5);
         elevator.PendingRequests.Should().HaveCount(0);
     }
 
@@ -51,9 +47,7 @@ public class StandardElevatorTests
     public void HasCapacity_Given_Elevator_Has_No_Space_Should_Return_False(int currentPassengers)
     {
         //-------------------------------- Arrange --------------------------------
-        var elevatorId = 1;
-        var maxCapacity = 5;
-        var elevator = CreateStandardElevator(elevatorId, maxCapacity);
+        var elevator = CreateStandardElevator(id: 1, maxCapacity: 5);
 
         elevator.Status.PassengerCount = currentPassengers;
 
@@ -62,8 +56,25 @@ public class StandardElevatorTests
 
         //-------------------------------- Assert ---------------------------------
         actual.Should().BeFalse();
-        elevator.MaxCapacity.Should().Be(maxCapacity);
+        elevator.MaxCapacity.Should().Be(5);
         elevator.PendingRequests.Should().HaveCount(0);
+    }
+
+    [Test]
+    public void AddRequest_Should_Merge_Same_Pickup_And_Destination()
+    {
+        //-------------------------------- Arrange --------------------------------
+        var elevator = CreateStandardElevator(id: 1, maxCapacity: 5);
+
+        elevator.AddRequest(pickupFloor: 1, destinationFloor: 5, waitingPassengers: 2);
+        elevator.AddRequest(pickupFloor: 1, destinationFloor: 5, waitingPassengers: 3);
+
+        //-------------------------------- Act ------------------------------------
+        elevator.Move(); // goes to floor 1
+
+        //-------------------------------- Assert ---------------------------------
+        elevator.Status.CurrentFloor.Should().Be(1);
+        elevator.Status.PassengerCount.Should().Be(5);
     }
 
     [Test]
@@ -84,81 +95,50 @@ public class StandardElevatorTests
     }
 
     [Test]
-    public void Move_Given_Request_To_Upper_Floor_Should_Move_Up_And_Stop_Once_Arrived()
+    public void Move_Given_Correct_Request_Should_Pickup_And_DropOff_Accurately()
     {
         //-------------------------------- Arrange --------------------------------
-        var elevatorId = 1;
-        var elevator = CreateStandardElevator(elevatorId, startFloor: 0);
+        var elevator = CreateStandardElevator(id: 1, startFloor: 0, maxCapacity: 4);
 
-        elevator.AddRequest(floor: 2, waitingPassengers: 2);
+        elevator.AddRequest(pickupFloor: 1, destinationFloor: 5, waitingPassengers: 3);
+        elevator.AddRequest(pickupFloor: 2, destinationFloor: 4, waitingPassengers: 3);
 
         //-------------------------------- Act ------------------------------------
         elevator.Move(); // should go to floor 1
 
         //-------------------------------- Assert ---------------------------------
-        elevator.Status.IsMoving.Should().BeTrue();
+        elevator.HasCapacity().Should().BeTrue();
         elevator.Status.CurrentFloor.Should().Be(1);
-        elevator.Status.PassengerCount.Should().Be(0);
-        elevator.PendingRequests.Should().HaveCount(1);
-        elevator.Status.Direction.Should().Be(Direction.Up);
+        elevator.Status.PassengerCount.Should().Be(3);
 
-        elevator.Move(); // should go to floor 2 and stop
-
-        //-------------------------------- Assert ---------------------------------
-        elevator.Status.CurrentFloor.Should().Be(2);
-        elevator.Status.IsMoving.Should().BeFalse();
-        elevator.Status.PassengerCount.Should().Be(2);
-        elevator.PendingRequests.Should().HaveCount(0);
-        elevator.Status.Direction.Should().Be(Direction.Idle);
-    }
-
-    [Test]
-    public void Move_Given_Request_To_Lower_Floor_Should_Move_Down_And_Stop_Once_Arrived()
-    {
-        //-------------------------------- Arrange --------------------------------
-        var elevatorId = 1;
-        var elevator = CreateStandardElevator(elevatorId, startFloor: 3);
-
-        elevator.AddRequest(floor: 1, waitingPassengers: 2);
-
-        //-------------------------------- Act ------------------------------------
         elevator.Move(); // should go to floor 2
 
         //-------------------------------- Assert ---------------------------------
-        elevator.Status.IsMoving.Should().BeTrue();
+        elevator.HasCapacity().Should().BeFalse();
         elevator.Status.CurrentFloor.Should().Be(2);
-        elevator.PendingRequests.Should().HaveCount(1);
-        elevator.Status.Direction.Should().Be(Direction.Down);
+        elevator.Status.PassengerCount.Should().Be(4); // take one passengers and gets fully occupied
 
-        elevator.Move(); // should go to floor 1 and stop
+        elevator.Move(); // should go to floor 3
 
         //-------------------------------- Assert ---------------------------------
-        elevator.Status.CurrentFloor.Should().Be(1);
+        elevator.HasCapacity().Should().BeFalse();
+        elevator.Status.CurrentFloor.Should().Be(3);
+        elevator.Status.PassengerCount.Should().Be(4);
+
+        elevator.Move(); // should move to floor 4 and drop off 1 passenger
+
+        //-------------------------------- Assert ---------------------------------
+        elevator.HasCapacity().Should().BeTrue();
+        elevator.Status.CurrentFloor.Should().Be(4);
+        elevator.Status.PassengerCount.Should().Be(3);
+
+        elevator.Move(); // reaches the last destination and drop off 3 passenger3
+
+        //-------------------------------- Assert ---------------------------------
+        elevator.HasCapacity().Should().BeTrue();
+        elevator.Status.CurrentFloor.Should().Be(5);
         elevator.Status.IsMoving.Should().BeFalse();
-        elevator.Status.PassengerCount.Should().Be(2);
-        elevator.PendingRequests.Should().HaveCount(0);
-        elevator.Status.Direction.Should().Be(Direction.Idle);
-    }
-
-    [Test]
-    public void AddRequest_Should_Not_Add_Duplicate_Floor()
-    {
-        //-------------------------------- Arrange --------------------------------
-        var elevatorId = 1;
-        var elevator = CreateStandardElevator(elevatorId, startFloor: 0);
-
-        elevator.AddRequest(floor: 1, waitingPassengers: 2);
-        elevator.AddRequest(floor: 1, waitingPassengers: 2); // duplicate
-
-        //-------------------------------- Act ------------------------------------
-        elevator.Move(); // should go to floor 1
-
-        //-------------------------------- Assert ---------------------------------
-        elevator.Status.CurrentFloor.Should().Be(1);
-        elevator.Status.PassengerCount.Should().Be(2);
-        elevator.Status.IsMoving.Should().BeFalse(); // Should stop and serve both requests in one
-        elevator.Status.Direction.Should().Be(Direction.Idle); // Stop, both requests are served
-        elevator.PendingRequests.Should().HaveCount(0); // No more requests
+        elevator.Status.PassengerCount.Should().Be(0);
     }
 
     [Test]
@@ -168,7 +148,7 @@ public class StandardElevatorTests
         var elevatorId = 1;
         var elevator = CreateStandardElevator(elevatorId, startFloor: 2);
 
-        elevator.AddRequest(floor: 2, waitingPassengers: 2);
+        elevator.AddRequest(pickupFloor: 2, waitingPassengers: 2, destinationFloor: 2);
 
         //-------------------------------- Act ------------------------------------
         elevator.Move();
